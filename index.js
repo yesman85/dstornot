@@ -2,19 +2,16 @@ new Vue({
     el: '#app',
     data: {
         message: '',
-        timezone: '',
         wakeup: '7:30',
         bedtime: '22:30',
-        options: [],
         times: [],
-        results: []
+        results: [],
+        dstOffset: null,
+        nonDstOffset: null
     },
     created: function () {
-        this.options = moment.tz.names();
-        this.timezone = moment.tz.guess();
-
         for (var i = 0; i < 24; i++) {
-            for (var j = 0; j <= 60; j += 15) {
+            for (var j = 0; j < 60; j += 15) {
                 this.times.push(i + ':' + (j === 0 ? '00' : j))
             }
         }
@@ -28,31 +25,47 @@ new Vue({
                     var lat = result[0].geometry.location.lat();
                     var lng = result[0].geometry.location.lng();
 
-                    vm.calc(vm.timezone, lat, lng);
+                    vm.calc(lat, lng);
                 }
                 else {
                     alert('unable to retrieve location');
                 }
             })
         },
-        calc: function (tz, lat, lng) {
+        calc: function (lat, lng) {
 
-            var a = moment().month(0).date(1).tz(tz);
-            var b = moment().month(11).date(31).tz(tz);
+            this.times = [];
+            this.results = [];
+            this.dstOffset = null;
+            this.nonDstOffset = null;
+
+            var a = moment().month(0).date(1);
+            var b = moment().month(11).date(31);
+
+            var getTzName = function(date){
+                var match = date.toDate().toString().match(/\((.*?)\)/);
+                if (match && match[1])
+                {
+                    return match[1];
+                }
+            }
 
             var results = new Array();
             for (var m = moment(a); m.isBefore(b); m.add(1, 'days')) {
                 var times = SunCalc.getTimes(m.toDate(), lat, lng);
                 results.push(times);
+
+                if (m.isDST() && !this.dstOffset) {
+                    this.dstOffset = getTzName(m) + ' (' + m.format('Z') + ')';
+                }
+                if (!m.isDST() && !this.nonDstOffset) {
+                    this.nonDstOffset = getTzName(m) + ' (' + m.format('Z') + ')';
+                }
             }
 
-            var driveTime1 = moment(m.toDate()).hours(6).minutes(30);
-            var driveTime2 = moment(m.toDate()).hours(7).minutes(00);
-            var diff = moment.duration(driveTime2.diff(driveTime1)).asMinutes();
-
             var r1 = this.getSeries(results, 0, ' DST in summer');
-            var r2 = this.getSeries(results, -1, ' never DST');
-            var r3 = this.getSeries(results, 1, ' always DST');
+            var r2 = this.getSeries(results, -1, ' always DST');
+            var r3 = this.getSeries(results, 1, ' never DST');
 
             var series = [
                 r1.sunriseSeries,
@@ -219,8 +232,8 @@ new Vue({
 })
 
 Vue.filter('mins', function (value) {
+    var minutes = Math.floor(value % 60);
     var hours = Math.floor(value / 60);
-    var minutes = value % 60;
     minutes = ('0' + minutes).substr(-2);
     return hours + ':' + minutes;
 });

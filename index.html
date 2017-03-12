@@ -23,17 +23,9 @@
   <div id="app" class="container">
     <h1>DST or not?</h1>
     <div class="row">
-      <div class="col-md-4 form-group">
+      <div class="col-md-7 form-group">
         <label>your location (i.e. Camdary, Alberta)</label>
         <input type="text" class="form-control" v-model="message" />
-      </div>
-      <div class="col-md-3 form-group">
-        <label>Timezone to report in</label>
-        <select class="selectpicker form-control" v-model="timezone" data-live-search="true">
-          <option v-for="option in options" v-bind:value="option">
-            {{ option }}
-          </option>
-        </select>
       </div>
       <div class="col-md-2 form-group">
         <label>Wake up at</label>
@@ -63,11 +55,17 @@
             <tr>
               <th></th>
               <th>DST in the summer</th>
-              <th>Never DST</th>
               <th>Always DST</th>
+              <th>Never DST</th>
             </tr>
           </thead>
           <tbody>
+            <tr>
+              <th scope="row">Timezone</th>
+              <td></td>
+              <td>{{dstOffset}}</td>
+              <td>{{nonDstOffset}}</td>
+            </tr>
             <tr>
               <th scope="row">Total daylight</th>
               <td>{{results[0].total | mins}}</td>
